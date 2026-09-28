@@ -8,7 +8,7 @@ def latest_ids(url,limit):
  return [j['id'] for j in map(json.loads,raw.splitlines()) if re.fullmatch(r'[A-Za-z0-9_-]{11}',j.get('id',''))]
 VIDS={ch:latest_ids(url,n) for ch,url,n in [('JunSun',CHANNELS['JunSun'],3),('Github Awesome',CHANNELS['Github Awesome'],2)]}
 if any(len(v)<2 for v in VIDS.values()):raise RuntimeError('YouTube latest list incomplete; leave published snapshot unchanged')
-now=datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=3))).strftime('%d.%m.%Y %H:%M IDT')
+now=datetime.datetime.now(datetime.timezone.utc).astimezone(__import__('zoneinfo').ZoneInfo('Asia/Jerusalem')).strftime('%d.%m.%Y %H:%M %Z')
 def getvideo(vid):
  raw=subprocess.check_output(['yt-dlp','--skip-download','--dump-single-json','--no-warnings',f'https://www.youtube.com/watch?v={vid}'],stderr=subprocess.DEVNULL,timeout=30)
  j=json.loads(raw)
