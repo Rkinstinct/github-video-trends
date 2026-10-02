@@ -57,7 +57,13 @@ page='''<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><me
 </script></body></html>'''
 coverage=f"{len(verified)} מאגרים ייחודיים · JunSun: {sum('JunSun' in r['channels'] for r in verified)} · Github Awesome: {sum('Github Awesome' in r['channels'] for r in verified)}. מאגר משותף נספר בשני הערוצים."
 day=datetime.datetime.now(__import__('zoneinfo').ZoneInfo('Asia/Jerusalem')).strftime('%Y-%m-%d')
-archive[day]={'day':day,'updated':now,'videos':[{'channel':ch,'title':v['title'],'date':v['date'],'url':v['url']} for ch,v in videos],'repos':verified}
+previous=archive.get(day,{})
+by_name={r['name'].lower():r for r in verified}
+for old in previous.get('repos',[]):
+ if old['name'].lower() not in by_name:verified.append(old)
+old_video_urls={v['url'] for ch,v in videos}
+retained_videos=[v for v in previous.get('videos',[]) if v['url'] not in old_video_urls]
+archive[day]={'day':day,'updated':now,'videos':[{'channel':ch,'title':v['title'],'date':v['date'],'url':v['url']} for ch,v in videos]+retained_videos,'repos':verified}
 (ROOT/'archive.json').write_text(json.dumps(archive,ensure_ascii=False))
 packed=base64.b64encode(gzip.compress(json.dumps(archive,ensure_ascii=False,separators=(',',':')).encode())).decode()
 page=page.replace('PACKED_ARCHIVE',packed).replace('COVERAGE',esc(coverage)).replace('DATE',esc(now)).replace('CARDS','\n'.join(map(card,verified))).replace('<!--VIDEO_LIST-->','\n'.join(video(ch,v) for ch,v in videos))
