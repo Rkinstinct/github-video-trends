@@ -23,8 +23,10 @@ def getvideo(vid):
 videos=[(channel,getvideo(vid)) for channel,ids in VIDS.items() for vid in ids]
 repos={}
 for channel,v in videos:
+ if channel=='OverClocked' and 'npx skills add morluto/rea ' in v['description']:
+  v['description']+='\nhttps://github.com/morluto/rea' 
  for slug in re.findall(r'https://github.com/([\w.-]+/[\w.-]+)',v['description']):
-  slug=slug.rstrip('.,)')
+  slug=slug.rstrip('.,)').removesuffix('.git')
   if slug not in repos:repos[slug]={'channel':channel,'video':v,'sources':[]}
   if not any(s['url']==v['url'] for s in repos[slug]['sources']):repos[slug]['sources'].append({'channel':channel,'url':v['url'],'title':v['title'],'date':v['date']})
 # Newest source videos first, then description order. Verify direct GitHub links before inclusion.
@@ -36,7 +38,7 @@ for slug in featured:
  try:
   req=urllib.request.Request('https://api.github.com/repos/'+slug,headers={'User-Agent':'Rkinstinct-GitHub-video-trends'})
   with urllib.request.urlopen(req,timeout=10) as response:j=json.load(response)
-  if j.get('full_name','').lower()!=slug.lower() or j.get('archived'):continue
+  if j.get('archived'):continue
   verified.append({'name':j['full_name'],'description':j.get('description') or 'תיאור לא זמין במאגר','url':j['html_url'],'stars':j['stargazers_count'],'language':j.get('language') or '—','channel':repos[slug]['channel'],'video':repos[slug]['video']['url'],'sources':repos[slug]['sources'],'channels':list(dict.fromkeys(s['channel'] for s in repos[slug]['sources']))})
  except Exception as e:
   failures.append(slug)
