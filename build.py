@@ -23,6 +23,8 @@ def getvideo(vid):
 videos=[(channel,getvideo(vid)) for channel,ids in VIDS.items() for vid in ids]
 repos={}
 for channel,v in videos:
+ if channel=='OverClocked' and 'brew tap manaflow-ai/cmux' in v['description']:
+  v['description']+='\nhttps://github.com/manaflow-ai/cmux'
  if channel=='OverClocked' and 'npx skills add morluto/rea ' in v['description']:
   v['description']+='\nhttps://github.com/morluto/rea' 
  for slug in re.findall(r'https://github.com/([\w.-]+/[\w.-]+)',v['description']):
