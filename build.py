@@ -35,6 +35,7 @@ for channel,v in videos:
 featured=list(repos)
 verified=[]
 failures=[]
+unavailable=[]
 for slug in featured:
  if slug not in repos:continue
  try:
@@ -43,6 +44,10 @@ for slug in featured:
   if j.get('archived'):continue
   verified.append({'name':j['full_name'],'description':j.get('description') or 'תיאור לא זמין במאגר','url':j['html_url'],'stars':j['stargazers_count'],'language':j.get('language') or '—','channel':repos[slug]['channel'],'video':repos[slug]['video']['url'],'sources':repos[slug]['sources'],'channels':list(dict.fromkeys(s['channel'] for s in repos[slug]['sources']))})
  except Exception as e:
+  
+  if slug=='nachisama/ai-data-extractor' and '404' in str(e):
+   unavailable.append(slug)
+   continue
   failures.append(slug)
   print('verification failed',slug,e)
 if failures:raise RuntimeError('Repository verification incomplete; leave published snapshot unchanged: '+', '.join(failures))
@@ -85,6 +90,9 @@ for old in previous.get('repos',[]):
 old_video_urls={v['url'] for ch,v in videos}
 retained_videos=[v for v in previous.get('videos',[]) if v['url'] not in old_video_urls]
 archive[day]={'day':day,'updated':now,'videos':[{'channel':ch,'title':v['title'],'date':v['date'],'url':v['url']} for ch,v in videos]+retained_videos,'repos':verified}
+if unavailable:
+ archive[day]['partial']=True
+ archive[day]['coverage_note']='נבדקו כל שמונת סרטוני המקור. מאגר אחד (nachisama/ai-data-extractor) החזיר 404 בבדיקה ולא נכלל בכרטיסים של היום; הכרטיסים ההיסטוריים נשמרו.'
 (ROOT/'archive.json').write_text(json.dumps(archive,ensure_ascii=False))
 packed=base64.b64encode(gzip.compress(json.dumps(archive,ensure_ascii=False,separators=(',',':')).encode())).decode()
 page=page.replace('PACKED_ARCHIVE',packed).replace('COVERAGE',esc(coverage)).replace('DATE',esc(now)).replace('CARDS','\n'.join(map(card,verified))).replace('<!--VIDEO_LIST-->','\n'.join(video(ch,v) for ch,v in videos))
