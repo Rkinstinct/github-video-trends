@@ -93,6 +93,9 @@ archive[day]={'day':day,'updated':now,'videos':[{'channel':ch,'title':v['title']
 if unavailable:
  archive[day]['partial']=True
  archive[day]['coverage_note']='נבדקו כל שמונת סרטוני המקור. שניים משלושת סרטוני JunSun האחרונים הם חדשות AI ללא קישורי GitHub, ולא הוחלפו בסרטונים ישנים. מאגר אחד (nachisama/ai-data-extractor) החזיר 404 בבדיקה ולא נכלל בכרטיסים של היום; הכרטיסים ההיסטוריים נשמרו.'
+if sum(not re.search(r'https://github.com/', v['description']) for ch,v in videos if ch=='JunSun')==2:
+ archive[day]['partial']=True
+ archive[day]['coverage_note']=archive[day].get('coverage_note','נבדקו כל שמונת סרטוני המקור וכל קישורי המאגרים אומתו.')+' שניים משלושת סרטוני JunSun האחרונים הם חדשות AI ללא קישורי GitHub, ולא הוחלפו בסרטונים ישנים.'
 (ROOT/'archive.json').write_text(json.dumps(archive,ensure_ascii=False))
 packed=base64.b64encode(gzip.compress(json.dumps(archive,ensure_ascii=False,separators=(',',':')).encode())).decode()
 page=page.replace('PACKED_ARCHIVE',packed).replace('COVERAGE',esc(coverage)).replace('DATE',esc(now)).replace('CARDS','\n'.join(map(card,verified))).replace('<!--VIDEO_LIST-->','\n'.join(video(ch,v) for ch,v in videos))
