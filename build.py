@@ -35,13 +35,16 @@ for channel,v in videos:
 featured=list(repos)
 verified=[]
 failures=[]
+archived_repos=[]
 unavailable=[]
 for slug in featured:
  if slug not in repos:continue
  try:
   req=urllib.request.Request('https://api.github.com/repos/'+slug,headers={'User-Agent':'Rkinstinct-GitHub-video-trends'})
   with urllib.request.urlopen(req,timeout=10) as response:j=json.load(response)
-  if j.get('archived'):continue
+  if j.get('archived'):
+   archived_repos.append(slug)
+   continue
   verified.append({'name':j['full_name'],'description':j.get('description') or 'תיאור לא זמין במאגר','url':j['html_url'],'stars':j['stargazers_count'],'language':j.get('language') or '—','channel':repos[slug]['channel'],'video':repos[slug]['video']['url'],'sources':repos[slug]['sources'],'channels':list(dict.fromkeys(s['channel'] for s in repos[slug]['sources']))})
  except Exception as e:
   
@@ -87,15 +90,28 @@ previous=archive.get(day,{})
 by_name={r['name'].lower():r for r in verified}
 for old in previous.get('repos',[]):
  if old['name'].lower() not in by_name:verified.append(old)
+ else:
+  current=by_name[old['name'].lower()]
+  identities={(x['channel'],x['url']) for x in current.get('sources',[])}
+  for source in old.get('sources',[]):
+   if (source['channel'],source['url']) not in identities:
+    current.setdefault('sources',[]).append(source)
+    identities.add((source['channel'],source['url']))
+  current['channels']=list(dict.fromkeys(x['channel'] for x in current.get('sources',[])))
 old_video_urls={v['url'] for ch,v in videos}
 retained_videos=[v for v in previous.get('videos',[]) if v['url'] not in old_video_urls]
 archive[day]={'day':day,'updated':now,'videos':[{'channel':ch,'title':v['title'],'date':v['date'],'url':v['url']} for ch,v in videos]+retained_videos,'repos':verified}
+notes=['נבדקו כל שמונת סרטוני המקור.']
+news_count=sum(not re.search(r'https://github.com/', v['description']) for ch,v in videos if ch=='JunSun')
+if news_count:
+ notes.append(f'{news_count} מתוך שלושת סרטוני JunSun האחרונים אינם כוללים קישורי GitHub; לא הוחלפו בסרטונים ישנים.')
+if archived_repos:
+ notes.append('מאגרים שסומנו בארכיון ב-GitHub ולא נכללו בכרטיסים החדשים: '+', '.join(archived_repos)+'. כרטיסים היסטוריים נשמרו.')
 if unavailable:
+ notes.append('מאגרים שלא היו זמינים בבדיקה ולא נכללו בכרטיסים החדשים: '+', '.join(unavailable)+'. כרטיסים היסטוריים נשמרו.')
+if news_count or archived_repos or unavailable:
  archive[day]['partial']=True
- archive[day]['coverage_note']='נבדקו כל שמונת סרטוני המקור. שניים משלושת סרטוני JunSun האחרונים הם חדשות AI ללא קישורי GitHub, ולא הוחלפו בסרטונים ישנים. מאגר אחד (nachisama/ai-data-extractor) החזיר 404 בבדיקה ולא נכלל בכרטיסים של היום; הכרטיסים ההיסטוריים נשמרו.'
-if sum(not re.search(r'https://github.com/', v['description']) for ch,v in videos if ch=='JunSun')==2:
- archive[day]['partial']=True
- archive[day]['coverage_note']=archive[day].get('coverage_note','נבדקו כל שמונת סרטוני המקור וכל קישורי המאגרים אומתו.')+' שניים משלושת סרטוני JunSun האחרונים הם חדשות AI ללא קישורי GitHub, ולא הוחלפו בסרטונים ישנים.'
+ archive[day]['coverage_note']=' '.join(notes)
 (ROOT/'archive.json').write_text(json.dumps(archive,ensure_ascii=False))
 packed=base64.b64encode(gzip.compress(json.dumps(archive,ensure_ascii=False,separators=(',',':')).encode())).decode()
 page=page.replace('PACKED_ARCHIVE',packed).replace('COVERAGE',esc(coverage)).replace('DATE',esc(now)).replace('CARDS','\n'.join(map(card,verified))).replace('<!--VIDEO_LIST-->','\n'.join(video(ch,v) for ch,v in videos))
