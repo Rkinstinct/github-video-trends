@@ -114,6 +114,6 @@ if news_count or archived_repos or unavailable:
  archive[day]['coverage_note']=' '.join(notes)
 (ROOT/'archive.json').write_text(json.dumps(archive,ensure_ascii=False))
 packed=base64.b64encode(gzip.compress(json.dumps(archive,ensure_ascii=False,separators=(',',':')).encode())).decode()
-page=page.replace('PACKED_ARCHIVE',packed).replace('COVERAGE',esc(coverage)).replace('DATE',esc(now)).replace('CARDS','\n'.join(map(card,verified))).replace('<!--VIDEO_LIST-->','\n'.join(video(ch,v) for ch,v in videos))
+page=page.replace('COVERAGE',esc(coverage)).replace('DATE',esc(now)).replace('CARDS','\n'.join(map(card,verified))).replace('<!--VIDEO_LIST-->','\n'.join(video(ch,v) for ch,v in videos)).replace('PACKED_ARCHIVE',packed)
 (ROOT/'index.html').write_text(page)
 print(f'Built {len(verified)} repos from {len(videos)} videos; {now}')
