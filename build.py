@@ -48,7 +48,7 @@ for slug in featured:
   verified.append({'name':j['full_name'],'description':j.get('description') or 'תיאור לא זמין במאגר','url':j['html_url'],'stars':j['stargazers_count'],'language':j.get('language') or '—','channel':repos[slug]['channel'],'video':repos[slug]['video']['url'],'sources':repos[slug]['sources'],'channels':list(dict.fromkeys(s['channel'] for s in repos[slug]['sources']))})
  except Exception as e:
   
-  if slug=='nachisama/ai-data-extractor' and '404' in str(e):
+  if '404' in str(e):
    unavailable.append(slug)
    continue
   failures.append(slug)
